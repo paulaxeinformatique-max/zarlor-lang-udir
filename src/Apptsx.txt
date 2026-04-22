@@ -1,0 +1,77 @@
+import React, { useState } from 'react';
+import { MATIERE_LITTERAIRE } from './matiere';
+
+// Ta clé vérifiée (le caractère après Ky est bien un I majuscule comme Italie)
+const API_KEY = "AIzaSyAJxomPhJJt03M_KyI_rsHP_dT0Li6Lpos"; 
+
+function App() {
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSublime = async () => {
+    if (!input) return;
+    setLoading(true);
+    setOutput("");
+
+    const instructions = "Tu es l'Expert UDIR en Graphie 77. Matière : " + (MATIERE_LITTERAIRE || "") + "\n\nTexte : " + input;
+
+    try {
+      // ON UTILISE LE SIGNE + POUR ÊTRE SÛR QUE LA CLÉ PASSE
+      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + API_KEY;
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: instructions }] }]
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        setOutput("Note de l'Agent : " + data.error.message);
+      } else if (data.candidates && data.candidates[0].content.parts[0].text) {
+        setOutput(data.candidates[0].content.parts[0].text);
+      } else {
+        setOutput("L'IA n'a pas pu répondre. Réessayez.");
+      }
+    } catch (error) {
+      setOutput("Erreur réseau : Vérifiez votre connexion.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  return (
+    <div style={{ padding: '30px', maxWidth: '800px', margin: '0 auto', fontFamily: 'serif', backgroundColor: '#fdfaf4', minHeight: '100vh' }}>
+      <h1 style={{ color: '#d35400', textAlign: 'center' }}>Zarlor la Lang</h1>
+      <p style={{ textAlign: 'center', fontStyle: 'italic' }}>Agent Expert UDIR - Graphie 77</p>
+      
+      <textarea 
+        style={{ width: '100%', height: '150px', padding: '15px', fontSize: '1.1rem', borderRadius: '10px' }}
+        placeholder="Écrir ici..."
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      
+      <button 
+        onClick={handleSublime} 
+        disabled={loading}
+        style={{ width: '100%', padding: '15px', background: '#d35400', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', marginTop: '10px', fontWeight: 'bold' }}
+      >
+        {loading ? "L'Agent i travay..." : "SIBLIMÉ"}
+      </button>
+      
+      {output && (
+        <div style={{ marginTop: '20px', padding: '20px', background: 'white', borderLeft: '10px solid #27ae60', borderRadius: '5px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+          <p style={{ fontSize: '1.2rem', lineHeight: '1.6' }}>{output}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
