@@ -1,0 +1,9 @@
+# Sécurité : On cache la clé API
+.env
+
+# Dossiers lourds (on ne les envoie jamais sur internet)
+node_modules/
+dist/
+
+# Fichiers système inutiles
+.DS_Store

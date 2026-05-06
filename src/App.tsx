@@ -31,13 +31,21 @@ function App() {
     } catch (e) { console.log("Erreur scan"); }
   };
 
-  const ajouterAuTresor = () => {
-    if (!output) return;
-    const nouvelleMemoire = [...tresor, output];
-    setTresor(nouvelleMemoire);
-    localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
-    alert("Ajouté au Zarlor ! ✨");
+const ajouterAuTresor = () => {
+  if (!output || !input) return; // On vérifie qu'on a les deux
+
+  // On crée un couple "Demande <-> Correction"
+  const nouvelleEntree = { 
+    demande: input, 
+    correction: output 
   };
+
+  const nouvelleMemoire = [...tresor, nouvelleEntree];
+  setTresor(nouvelleMemoire);
+  
+  localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
+  alert("Pierre ajoutée au Trésor avec son contexte ! ✨");
+};
 
   const handleSublime = async () => {
     if (!input) return;
