@@ -1,124 +1,120 @@
 import React, { useState, useEffect } from 'react';
-import { MATIERE_LITTERAIRE } from './matiere';
 
-//const API_KEY = "AIzaSyAJxomPhJJt03M_KyI_rsHP_dT0Li6Lpos"; 
+// Récupération de la clé API
 const API_KEY = import.meta.env.VITE_GEMINI_KEY;
+
+interface TresorEntry {
+  demande_initiale: string;
+  choix_mode: string;
+  version_expert: string;
+}
 
 function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tresor, setTresor] = useState<string[]>([]);
-  const [nomModele, setNomModele] = useState('models/gemini-2.5-flash');
+  const [tresor, setTresor] = useState<TresorEntry[]>([]);
+  const [nomModele, setNomModele] = useState('models/gemini-1.5-flash');
+  const [mode, setMode] = useState('traduire'); 
+  const [correctionExpert, setCorrectionExpert] = useState('');
 
-  // 1. AU DÉMARRAGE : On charge la mémoire ET on cherche le bon modèle
   useEffect(() => {
     const memoire = localStorage.getItem('zarlor_memoire');
     if (memoire) setTresor(JSON.parse(memoire));
-    trouverLeBonModele();
   }, []);
 
-  // 2. LE SCANNER AUTOMATIQUE (Il cherche ce qui marche pour TA clé)
-  const trouverLeBonModele = async () => {
-    try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`);
-      const data = await response.json();
-      if (data.models) {
-        // On cherche un modèle qui contient "flash" ou "pro"
-        const bon = data.models.find((m: any) => m.name.includes('flash') || m.name.includes('pro'));
-        if (bon) setNomModele(bon.name);
-      }
-    } catch (e) { console.log("Erreur scan"); }
+  const ajouterAuTresor = () => {
+    if (!input || !correctionExpert) {
+      alert("Il faut une demande et une correction d'expert !");
+      return;
+    }
+
+    const nouvelleEntree: TresorEntry = { 
+      demande_initiale: input, 
+      choix_mode: mode,
+      version_expert: correctionExpert 
+    };
+
+    const nouvelleMemoire = [...tresor, nouvelleEntree];
+    setTresor(nouvelleMemoire);
+    localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
+    alert("Pierre ajoutée au Trésor ! ✨");
+    setCorrectionExpert(''); // On vide pour la suite
   };
-
-const ajouterAuTresor = () => {
-  // 'input' est la phrase de départ (ligne 8 de travail1.JPG)
-  // 'correctionExpert' est ce que l'auteur vient de saisir dans la Zone B
-  if (!input || !correctionExpert) return;
-
-  const nouvelleEntree = { 
-    demande_initiale: input, 
-    choix_mode: mode,
-    version_expert: correctionExpert // C'est l'Or pur
-  };
-
-  const nouvelleMemoire = [...tresor, nouvelleEntree];
-  setTresor(nouvelleMemoire);
-  
-  localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
-  alert("La correction de l'auteur est enregistrée dans le Trésor ! ✨");
-};
-  
-  localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
-  alert("Pierre ajoutée au Trésor avec son contexte ! ✨");
-};
 
   const handleSublime = async () => {
     if (!input) return;
     setLoading(true);
-    setOutput("");
+    setCorrectionExpert(''); // On repart à zéro pour l'expert
 
+    // On prépare les exemples du Trésor pour l'IA
     const exemplesTresor = tresor.length > 0 
-      ? "\nExemples validés :\n" + tresor.join("\n")
+      ? "\nVoici des exemples validés par l'expert (UDIR 77) à suivre impérativement :\n" + 
+        tresor.map(t => `Demande: ${t.demande_initiale} -> Correction: ${t.version_expert}`).join("\n")
       : "";
 
-    const instructions = `INTERDICTION DE RÉPONDRE EN FRANÇAIS. Expert UDIR Graphie 77. 
-    Règles : Pas d'apostrophes, agglutination (ex: lamer, lakour), pas de 'un', ne cite jamais d'auteurs.
-    Matière : ${MATIERE_LITTERAIRE} ${exemplesTresor}
-    Texte à transformer : ${input}`;
+    const promptSysteme = `Tu es l'expert UDIR 77. Mode actuel : ${mode}. ${exemplesTresor}\nRespecte scrupuleusement la graphie 77.`;
 
     try {
-      // ON UTILISE LE NOM TROUVÉ PAR LE SCANNER
-      const url = `https://generativelanguage.googleapis.com/v1beta/${nomModele}:generateContent?key=${API_KEY}`;
-
-      const response = await fetch(url, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${nomModele}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ parts: [{ text: instructions }] }] })
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
+        })
       });
-
       const data = await response.json();
-
-      if (data.error) {
-        setOutput("Désolé, Google dit : " + data.error.message);
-      } else if (data.candidates) {
-        setOutput(data.candidates[0].content.parts[0].text);
-      }
+      setOutput(data.candidates[0].content.parts[0].text);
     } catch (error) {
-      setOutput("Erreur de connexion.");
-    } finally {
-      setLoading(false);
+      console.error("Erreur:", error);
+      setOutput("Erreur technique. Vérifiez votre connexion.");
     }
+    setLoading(false);
   };
 
   return (
-    <div style={{ padding: '30px', maxWidth: '800px', margin: '0 auto', fontFamily: 'serif', backgroundColor: '#fdfaf4', minHeight: '100vh' }}>
+    <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif', backgroundColor: '#fdfaf4', minHeight: '100vh' }}>
       <h1 style={{ color: '#d35400', textAlign: 'center' }}>Zarlor la Lang 💎</h1>
-      <p style={{ textAlign: 'center', fontSize: '0.8rem', color: '#999' }}>Modele actif : {nomModele}</p>
       
+      <div style={{ marginBottom: '20px' }}>
+        <label>Option choisie :</label>
+        <select value={mode} onChange={(e) => setMode(e.target.value)} style={{ width: '100%', padding: '10px', marginTop: '5px' }}>
+          <option value="traduire">Traduire en Créole 77</option>
+          <option value="proposer">Proposition (Idée)</option>
+          <option value="corriger">Corriger texte créole</option>
+        </select>
+      </div>
+
       <textarea 
-        style={{ width: '100%', height: '120px', padding: '15px', borderRadius: '10px', border: '1px solid #ccc', fontSize: '1.1rem' }}
+        style={{ width: '100%', height: '100px', padding: '15px', borderRadius: '10px', fontSize: '1rem' }}
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Écrivez ici..."
+        placeholder="Écrivez ici votre texte ou votre idée..."
       />
       
-      <button onClick={handleSublime} disabled={loading} style={{ width: '100%', padding: '15px', background: '#d35400', color: 'white', marginTop: '10px', fontWeight: 'bold', borderRadius: '8px', cursor: 'pointer', border: 'none' }}>
-        {loading ? "RÉFLEXION EN COURS..." : "SIBLIMÉ"}
+      <button onClick={handleSublime} disabled={loading} style={{ width: '100%', padding: '15px', background: '#d35400', color: 'white', marginTop: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+        {loading ? "L'IA RÉFLÉCHIT..." : "SIBLIMÉ"}
       </button>
 
       {output && (
-        <div style={{ marginTop: '20px', padding: '20px', background: 'white', borderLeft: '10px solid #27ae60', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-          <p style={{ whiteSpace: 'pre-wrap', fontSize: '1.2rem' }}>{output}</p>
-          <button onClick={ajouterAuTresor} style={{ marginTop: '15px', background: '#27ae60', color: 'white', border: 'none', padding: '10px', borderRadius: '5px', cursor: 'pointer' }}>
-            ✅ VALIDER (Ajouter à la mémoire)
-          </button>
-        </div>
-      )}
+        <div style={{ marginTop: '20px' }}>
+          <div style={{ padding: '15px', background: '#eee', borderRadius: '8px', marginBottom: '20px' }}>
+            <small style={{ color: '#666' }}>Proposition de l'IA :</small>
+            <p style={{ fontSize: '1.1rem', margin: '10px 0' }}>{output}</p>
+          </div>
 
-      {tresor.length > 0 && (
-        <div style={{ marginTop: '30px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-          <p style={{ fontSize: '0.8rem', color: '#7f8c8d' }}>Mémoire : {tresor.length} phrase(s) enregistrée(s).</p>
+          <div style={{ padding: '15px', background: '#fff', border: '2px solid #ffd700', borderRadius: '8px' }}>
+            <label style={{ fontWeight: 'bold', color: '#d35400' }}>Votre version souveraine (Expert) :</label>
+            <textarea 
+              style={{ width: '100%', height: '80px', marginTop: '10px', padding: '10px', border: '1px solid #ccc' }}
+              value={correctionExpert}
+              onChange={(e) => setCorrectionExpert(e.target.value)}
+              placeholder="Corrigez ici pour le Trésor..."
+            />
+            <button onClick={ajouterAuTresor} style={{ width: '100%', marginTop: '10px', padding: '10px', background: '#27ae60', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+              ENREGISTRER AU TRÉSOR ✨
+            </button>
+          </div>
         </div>
       )}
     </div>
