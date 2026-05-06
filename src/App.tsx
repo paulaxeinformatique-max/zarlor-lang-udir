@@ -32,16 +32,22 @@ function App() {
   };
 
 const ajouterAuTresor = () => {
-  if (!output || !input) return; // On vérifie qu'on a les deux
+  // 'input' est la phrase de départ (ligne 8 de travail1.JPG)
+  // 'correctionExpert' est ce que l'auteur vient de saisir dans la Zone B
+  if (!input || !correctionExpert) return;
 
-  // On crée un couple "Demande <-> Correction"
   const nouvelleEntree = { 
-    demande: input, 
-    correction: output 
+    demande_initiale: input, 
+    choix_mode: mode,
+    version_expert: correctionExpert // C'est l'Or pur
   };
 
   const nouvelleMemoire = [...tresor, nouvelleEntree];
   setTresor(nouvelleMemoire);
+  
+  localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
+  alert("La correction de l'auteur est enregistrée dans le Trésor ! ✨");
+};
   
   localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
   alert("Pierre ajoutée au Trésor avec son contexte ! ✨");
