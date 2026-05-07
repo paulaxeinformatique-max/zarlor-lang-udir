@@ -50,17 +50,18 @@ function App() {
     setLoading(true);
     setCorrectionExpert('');
 
-    // Préparation du contexte (Few-shot learning) [cite: 131]
+    // On prépare le contexte (Trésor)
     const exemplesTresor = tresor.length > 0 
       ? "\nCONNAISSANCES (UDIR 77) :\n" + 
         tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
       : "";
 
-    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77 (agglutination, pas d'apostrophes).`;
+    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77.`;
 
     try {
-      // URL ultra-précise pour éviter l'erreur 404 [cite: 133]
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
+      // SOLUTION RADICALE : L'adresse est écrite en un seul bloc sans variable de nom
+      // C'est l'adresse exacte validée par Google pour le modèle Flash
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
       
       const response = await fetch(url, {
         method: 'POST',
@@ -73,12 +74,13 @@ function App() {
       const data = await response.json();
 
       if (data.error) {
-        setOutput(`Erreur Google : ${data.error.message}`); // Pour voir l'erreur réelle [cite: 135]
+        // Si ça rate, on affiche le vrai message de Google
+        setOutput(`Erreur Google : ${data.error.message}`);
       } else if (data.candidates && data.candidates[0]) {
         setOutput(data.candidates[0].content.parts[0].text);
       }
     } catch (error) {
-      setOutput("Erreur de connexion. Vérifiez votre clé API.");
+      setOutput("Erreur : Impossible de joindre l'IA. Vérifie ta clé API.");
     } finally {
       setLoading(false);
     }
