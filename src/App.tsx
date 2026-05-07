@@ -47,20 +47,21 @@ function App() {
   };
 
   // Fonction principale d'appel à l'IA [cite: 24, 27]
-const handleSublime = async () => {
+  const handleSublime = async () => {
     if (!input) return;
     setLoading(true);
     setCorrectionExpert(''); 
 
+    // On prépare le "Trésor" pour l'IA
     const exemplesTresor = tresor.length > 0 
-      ? "\nCONNAISSANCES EXPERTES (Modèles UDIR 77) :\n" + 
+      ? "\nCONNAISSANCES (UDIR 77) :\n" + 
         tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
       : "";
 
-    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nProduis uniquement du créole 77.`;
+    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77.`;
 
     try {
-      // URL ultra-robuste
+      // URL ultra-précise avec v1beta
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
       
       const response = await fetch(url, {
@@ -74,14 +75,15 @@ const handleSublime = async () => {
       const data = await response.json();
 
       if (data.error) {
-        setOutput(`Erreur : ${data.error.message}`);
+        // Affiche l'erreur en clair si ça échoue encore
+        setOutput(`Erreur Google : ${data.error.message}`);
       } else if (data.candidates && data.candidates[0]) {
         setOutput(data.candidates[0].content.parts[0].text);
       } else {
-        setOutput("Aucune réponse. Réessayez.");
+        setOutput("L'IA n'a pas renvoyé de réponse. Réessaie.");
       }
     } catch (error) {
-      setOutput("Erreur de connexion. Vérifiez votre clé API.");
+      setOutput("Erreur de connexion. Vérifie ta clé API.");
     }
     setLoading(false);
   };
