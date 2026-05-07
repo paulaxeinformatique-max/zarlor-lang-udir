@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
 import React, { useState, useEffect } from 'react';
 
-// Récupération sécurisée de la clé API 
+// Récupération de la clé API depuis .env 
 const API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
-// Structure pour conserver le contexte (Demande + Mode + Correction) [cite: 16]
+// Structure pour le Trésor (Contexte complet) [cite: 113]
 interface TresorEntry {
   demande_initiale: string;
   choix_mode: string;
@@ -15,112 +15,74 @@ function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tresor, setTresor] = useState<TresorEntry[]>([]); // Gère les objets du Trésor [cite: 17]
-  const [nomModele] = useState('gemini-1.5-flash');
+  const [tresor, setTresor] = useState<TresorEntry[]>([]);
+  const [nomModele] = useState('gemini-1.5-flash'); // Juste le nom, sans "models/" [cite: 116]
   const [mode, setMode] = useState('traduire'); 
   const [correctionExpert, setCorrectionExpert] = useState('');
 
-  // Chargement de la mémoire locale au démarrage [cite: 19]
+  // Chargement de la mémoire au démarrage [cite: 117]
   useEffect(() => {
     const memoire = localStorage.getItem('zarlor_memoire');
     if (memoire) setTresor(JSON.parse(memoire));
   }, []);
 
-  // Fonction pour graver la version de l'expert dans le Trésor [cite: 20, 22]
+  // Enregistrement dans le Trésor [cite: 118, 120]
   const ajouterAuTresor = () => {
     if (!input || !correctionExpert) {
       alert("Il faut une demande et une correction d'expert !");
       return;
     }
-
     const nouvelleEntree: TresorEntry = { 
       demande_initiale: input, 
       choix_mode: mode,
       version_expert: correctionExpert 
     };
-
     const nouvelleMemoire = [...tresor, nouvelleEntree];
     setTresor(nouvelleMemoire);
     localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
     alert("Pierre ajoutée au Trésor ! ✨");
-    setCorrectionExpert(''); // Prépare la zone pour la suite [cite: 22, 23]
+    setCorrectionExpert('');
   };
 
-  // Fonction principale d'appel à l'IA [cite: 24, 27]
+  // Appel à l'IA [cite: 122, 124, 133]
   const handleSublime = async () => {
-  if (!input) return;
-  setLoading(true);
-  setCorrectionExpert('');
+    if (!input) return;
+    setLoading(true);
+    setCorrectionExpert('');
 
-  // Le prompt et le trésor... (garde ton code pour ça)
-  const promptSysteme = `Tu es l'expert UDIR 77...`; 
+    // Préparation du contexte (Few-shot learning) [cite: 131]
+    const exemplesTresor = tresor.length > 0 
+      ? "\nCONNAISSANCES (UDIR 77) :\n" + 
+        tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
+      : "";
 
-  try {
-    // ON UTILISE v1beta ET ON ÉCRIT L'URL SANS DOUBLONS
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
-      })
-    });
+    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77 (agglutination, pas d'apostrophes).`;
 
-    const data = await response.json();
+    try {
+      // URL ultra-précise pour éviter l'erreur 404 [cite: 133]
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte : ${input}` }] }]
+        })
+      });
+      
+      const data = await response.json();
 
-    if (data.error) {
-      // Si Google renvoie encore une erreur, on saura pourquoi
-      setOutput(`Erreur Google : ${data.error.message}`);
-    } else if (data.candidates && data.candidates[0]) {
-      setOutput(data.candidates[0].content.parts[0].text);
-    } else {
-      setOutput("L'IA n'a pas pu répondre. Réessaie.");
+      if (data.error) {
+        setOutput(`Erreur Google : ${data.error.message}`); // Pour voir l'erreur réelle [cite: 135]
+      } else if (data.candidates && data.candidates[0]) {
+        setOutput(data.candidates[0].content.parts[0].text);
+      }
+    } catch (error) {
+      setOutput("Erreur de connexion. Vérifiez votre clé API.");
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    setOutput("Problème de connexion. Vérifie ta clé API.");
-  }
-  setLoading(false);
-};
-  setLoading(true);
-  setCorrectionExpert('');
-
-  // On prépare le contexte pour l'IA
-  const exemplesTresor = tresor.length > 0 
-    ? "\nCONNAISSANCES (UDIR 77) :\n" + 
-      tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
-    : "";
-
-  const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77.`;
-
-  try {
-    // SOLUTION RADICALE : On écrit l'adresse complète sans passer par une variable complexe
-    // On utilise v1beta qui est la version la plus compatible
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
-      })
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-      // Si Google râle, il nous dira précisément pourquoi
-      setOutput(`Erreur Google : ${data.error.message}`);
-    } else if (data.candidates && data.candidates[0]) {
-      setOutput(data.candidates[0].content.parts[0].text);
-    } else {
-      setOutput("L'IA n'a pas renvoyé de réponse. Réessaie.");
-    }
-  } catch (error) {
-    setOutput("Problème de connexion. Vérifie ta clé API.");
-  }
-  setLoading(false);
-};
+  };
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif', backgroundColor: '#fdfaf4', minHeight: '100vh' }}>
@@ -136,10 +98,10 @@ function App() {
       </div>
 
       <textarea 
-        style={{ width: '100%', height: '100px', padding: '15px', borderRadius: '10px', fontSize: '1rem' }}
+        style={{ width: '100%', height: '100px', padding: '15px', borderRadius: '10px', border: '1px solid #ccc' }}
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        placeholder="Écrivez ici votre texte ou votre idée..."
+        placeholder="Écrivez ici..."
       />
      
       <button onClick={handleSublime} disabled={loading} style={{ width: '100%', padding: '15px', background: '#d35400', color: 'white', marginTop: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
@@ -148,13 +110,11 @@ function App() {
 
       {output && (
         <div style={{ marginTop: '20px' }}>
-          {/* ZONE A : PROPOSITION IA [cite: 33] */}
           <div style={{ padding: '15px', background: '#eee', borderRadius: '8px', marginBottom: '20px' }}>
             <small style={{ color: '#666' }}>Proposition de l'IA :</small>
             <p style={{ fontSize: '1.1rem', margin: '10px 0' }}>{output}</p>
           </div>
 
-          {/* ZONE B : CORRECTION EXPERT [cite: 34] */}
           <div style={{ padding: '15px', background: '#fff', border: '2px solid #ffd700', borderRadius: '8px' }}>
             <label style={{ fontWeight: 'bold', color: '#d35400' }}>Votre version souveraine (Expert) :</label>
             <textarea 
