@@ -16,7 +16,7 @@ function App() {
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
   const [tresor, setTresor] = useState<TresorEntry[]>([]); // Gère les objets du Trésor [cite: 17]
-  const [nomModele] = useState('models/gemini-1.5-flash'); 
+  const [nomModele] = useState('gemini-1.5-flash');
   const [mode, setMode] = useState('traduire'); 
   const [correctionExpert, setCorrectionExpert] = useState('');
 
@@ -61,7 +61,8 @@ function App() {
     const promptSysteme = `Tu es l'expert UDIR 77. Mode actuel : ${mode}. ${exemplesTresor}\nRespecte scrupuleusement la graphie 77.`;
 
 try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${nomModele}:generateContent?key=${API_KEY}`, {
+      // On utilise v1 au lieu de v1beta pour plus de stabilité
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${nomModele}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,17 +72,16 @@ try {
       
       const data = await response.json();
 
-      // Si Google renvoie une erreur (clé invalide, etc.)
       if (data.error) {
-        setOutput(`Erreur Google : ${data.error.message} (Code: ${data.error.code})`);
+        // Cela nous dira EXACTEMENT ce qui ne va pas
+        setOutput(`Erreur Google : ${data.error.message}`);
       } else if (data.candidates && data.candidates[0]) {
         setOutput(data.candidates[0].content.parts[0].text);
       } else {
-        setOutput("L'IA a renvoyé une réponse vide ou inattendue.");
+        setOutput("L'IA n'a pas pu générer de réponse. Réessayez.");
       }
-
     } catch (error) {
-      setOutput("Impossible de contacter Google. Vérifiez votre clé API dans le fichier .env.");
+      setOutput("Erreur de connexion. Vérifiez votre clé API.");
     }
     setLoading(false);
   };
