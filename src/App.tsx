@@ -52,6 +52,39 @@ function App() {
   setLoading(true);
   setCorrectionExpert('');
 
+  // Le prompt et le trésor... (garde ton code pour ça)
+  const promptSysteme = `Tu es l'expert UDIR 77...`; 
+
+  try {
+    // ON UTILISE v1beta ET ON ÉCRIT L'URL SANS DOUBLONS
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
+      })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      // Si Google renvoie encore une erreur, on saura pourquoi
+      setOutput(`Erreur Google : ${data.error.message}`);
+    } else if (data.candidates && data.candidates[0]) {
+      setOutput(data.candidates[0].content.parts[0].text);
+    } else {
+      setOutput("L'IA n'a pas pu répondre. Réessaie.");
+    }
+  } catch (error) {
+    setOutput("Problème de connexion. Vérifie ta clé API.");
+  }
+  setLoading(false);
+};
+  setLoading(true);
+  setCorrectionExpert('');
+
   // On prépare le contexte pour l'IA
   const exemplesTresor = tresor.length > 0 
     ? "\nCONNAISSANCES (UDIR 77) :\n" + 
