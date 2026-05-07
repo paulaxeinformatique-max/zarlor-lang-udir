@@ -47,39 +47,44 @@ function App() {
   };
 
   // Fonction principale d'appel à l'IA [cite: 24, 27]
- const handleSublime = async () => {
+  const handleSublime = async () => {
   if (!input) return;
   setLoading(true);
   setCorrectionExpert('');
 
-  // Le prompt et le trésor... (garder ton code actuel ici)
-  const promptSysteme = `Tu es l'expert UDIR 77...`; 
+  // On prépare le contexte pour l'IA
+  const exemplesTresor = tresor.length > 0 
+    ? "\nCONNAISSANCES (UDIR 77) :\n" + 
+      tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
+    : "";
+
+  const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77.`;
 
   try {
-    // ON UTILISE v1beta ET ON ÉCRIT L'ADRESSE ENTIÈREMENT
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
+    // SOLUTION RADICALE : On écrit l'adresse complète sans passer par une variable complexe
+    // On utilise v1beta qui est la version la plus compatible
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
     
-    console.log("Appel à :", url); // Pour vérifier dans la console
-
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte : ${input}` }] }]
+        contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
       })
     });
 
     const data = await response.json();
 
     if (data.error) {
+      // Si Google râle, il nous dira précisément pourquoi
       setOutput(`Erreur Google : ${data.error.message}`);
     } else if (data.candidates && data.candidates[0]) {
       setOutput(data.candidates[0].content.parts[0].text);
     } else {
-      setOutput("L'IA n'a pas pu répondre.");
+      setOutput("L'IA n'a pas renvoyé de réponse. Réessaie.");
     }
   } catch (error) {
-    setOutput("Problème de connexion.");
+    setOutput("Problème de connexion. Vérifie ta clé API.");
   }
   setLoading(false);
 };
