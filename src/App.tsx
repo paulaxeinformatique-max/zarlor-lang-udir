@@ -1,8 +1,10 @@
+/// <reference types="vite/client" />
 import React, { useState, useEffect } from 'react';
 
-// Récupération de la clé API
+// Récupération sécurisée de la clé API 
 const API_KEY = import.meta.env.VITE_GEMINI_KEY;
 
+// Structure pour conserver le contexte (Demande + Mode + Correction) [cite: 16]
 interface TresorEntry {
   demande_initiale: string;
   choix_mode: string;
@@ -13,16 +15,18 @@ function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [tresor, setTresor] = useState<TresorEntry[]>([]);
-  const [nomModele, setNomModele] = useState('models/gemini-1.5-flash');
+  const [tresor, setTresor] = useState<TresorEntry[]>([]); // Gère les objets du Trésor [cite: 17]
+  const [nomModele] = useState('models/gemini-1.5-flash'); 
   const [mode, setMode] = useState('traduire'); 
   const [correctionExpert, setCorrectionExpert] = useState('');
 
+  // Chargement de la mémoire locale au démarrage [cite: 19]
   useEffect(() => {
     const memoire = localStorage.getItem('zarlor_memoire');
     if (memoire) setTresor(JSON.parse(memoire));
   }, []);
 
+  // Fonction pour graver la version de l'expert dans le Trésor [cite: 20, 22]
   const ajouterAuTresor = () => {
     if (!input || !correctionExpert) {
       alert("Il faut une demande et une correction d'expert !");
@@ -39,17 +43,18 @@ function App() {
     setTresor(nouvelleMemoire);
     localStorage.setItem('zarlor_memoire', JSON.stringify(nouvelleMemoire));
     alert("Pierre ajoutée au Trésor ! ✨");
-    setCorrectionExpert(''); // On vide pour la suite
+    setCorrectionExpert(''); // Prépare la zone pour la suite [cite: 22, 23]
   };
 
+  // Fonction principale d'appel à l'IA [cite: 24, 27]
   const handleSublime = async () => {
     if (!input) return;
     setLoading(true);
-    setCorrectionExpert(''); // On repart à zéro pour l'expert
+    setCorrectionExpert(''); 
 
-    // On prépare les exemples du Trésor pour l'IA
+    // Préparation des exemples pour l'apprentissage de l'IA [cite: 24, 25]
     const exemplesTresor = tresor.length > 0 
-      ? "\nVoici des exemples validés par l'expert (UDIR 77) à suivre impérativement :\n" + 
+      ? "\nExemples validés par l'expert (UDIR 77) :\n" + 
         tresor.map(t => `Demande: ${t.demande_initiale} -> Correction: ${t.version_expert}`).join("\n")
       : "";
 
@@ -64,7 +69,7 @@ function App() {
         })
       });
       const data = await response.json();
-      setOutput(data.candidates[0].content.parts[0].text);
+      setOutput(data.candidates[0].content.parts[0].text); // Affiche la proposition [cite: 28]
     } catch (error) {
       console.error("Erreur:", error);
       setOutput("Erreur technique. Vérifiez votre connexion.");
@@ -91,25 +96,27 @@ function App() {
         onChange={(e) => setInput(e.target.value)}
         placeholder="Écrivez ici votre texte ou votre idée..."
       />
-      
+     
       <button onClick={handleSublime} disabled={loading} style={{ width: '100%', padding: '15px', background: '#d35400', color: 'white', marginTop: '10px', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
         {loading ? "L'IA RÉFLÉCHIT..." : "SIBLIMÉ"}
       </button>
 
       {output && (
         <div style={{ marginTop: '20px' }}>
+          {/* ZONE A : PROPOSITION IA [cite: 33] */}
           <div style={{ padding: '15px', background: '#eee', borderRadius: '8px', marginBottom: '20px' }}>
             <small style={{ color: '#666' }}>Proposition de l'IA :</small>
             <p style={{ fontSize: '1.1rem', margin: '10px 0' }}>{output}</p>
           </div>
 
+          {/* ZONE B : CORRECTION EXPERT [cite: 34] */}
           <div style={{ padding: '15px', background: '#fff', border: '2px solid #ffd700', borderRadius: '8px' }}>
             <label style={{ fontWeight: 'bold', color: '#d35400' }}>Votre version souveraine (Expert) :</label>
             <textarea 
               style={{ width: '100%', height: '80px', marginTop: '10px', padding: '10px', border: '1px solid #ccc' }}
               value={correctionExpert}
               onChange={(e) => setCorrectionExpert(e.target.value)}
-              placeholder="Corrigez ici pour le Trésor..."
+              placeholder="Corrigez ici pour enrichir le Trésor..."
             />
             <button onClick={ajouterAuTresor} style={{ width: '100%', marginTop: '10px', padding: '10px', background: '#27ae60', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
               ENREGISTRER AU TRÉSOR ✨
