@@ -47,46 +47,42 @@ function App() {
   };
 
   // Fonction principale d'appel à l'IA [cite: 24, 27]
-  const handleSublime = async () => {
-    if (!input) return;
-    setLoading(true);
-    setCorrectionExpert(''); 
+ const handleSublime = async () => {
+  if (!input) return;
+  setLoading(true);
+  setCorrectionExpert('');
 
-    // On prépare le "Trésor" pour l'IA
-    const exemplesTresor = tresor.length > 0 
-      ? "\nCONNAISSANCES (UDIR 77) :\n" + 
-        tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
-      : "";
+  // Le prompt et le trésor... (garder ton code actuel ici)
+  const promptSysteme = `Tu es l'expert UDIR 77...`; 
 
-    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nRéponds uniquement en Créole 77.`;
+  try {
+    // ON UTILISE v1beta ET ON ÉCRIT L'ADRESSE ENTIÈREMENT
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
+    
+    console.log("Appel à :", url); // Pour vérifier dans la console
 
-    try {
-      // URL ultra-précise avec v1beta
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte : ${input}` }] }]
-        })
-      });
-      
-      const data = await response.json();
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte : ${input}` }] }]
+      })
+    });
 
-      if (data.error) {
-        // Affiche l'erreur en clair si ça échoue encore
-        setOutput(`Erreur Google : ${data.error.message}`);
-      } else if (data.candidates && data.candidates[0]) {
-        setOutput(data.candidates[0].content.parts[0].text);
-      } else {
-        setOutput("L'IA n'a pas renvoyé de réponse. Réessaie.");
-      }
-    } catch (error) {
-      setOutput("Erreur de connexion. Vérifie ta clé API.");
+    const data = await response.json();
+
+    if (data.error) {
+      setOutput(`Erreur Google : ${data.error.message}`);
+    } else if (data.candidates && data.candidates[0]) {
+      setOutput(data.candidates[0].content.parts[0].text);
+    } else {
+      setOutput("L'IA n'a pas pu répondre.");
     }
-    setLoading(false);
-  };
+  } catch (error) {
+    setOutput("Problème de connexion.");
+  }
+  setLoading(false);
+};
 
   return (
     <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif', backgroundColor: '#fdfaf4', minHeight: '100vh' }}>
