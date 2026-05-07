@@ -60,7 +60,7 @@ function App() {
 
     const promptSysteme = `Tu es l'expert UDIR 77. Mode actuel : ${mode}. ${exemplesTresor}\nRespecte scrupuleusement la graphie 77.`;
 
-    try {
+try {
       const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${nomModele}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -68,11 +68,20 @@ function App() {
           contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
         })
       });
+      
       const data = await response.json();
-      setOutput(data.candidates[0].content.parts[0].text); // Affiche la proposition [cite: 28]
+
+      // AJOUT DE CE TEST POUR VOIR L'ERREUR RÉELLE DE GOOGLE
+      if (data.error) {
+        setOutput(`Erreur Google : ${data.error.message}`);
+      } else if (data.candidates && data.candidates[0].content) {
+        setOutput(data.candidates[0].content.parts[0].text);
+      } else {
+        setOutput("L'IA a renvoyé une réponse vide.");
+      }
     } catch (error) {
       console.error("Erreur:", error);
-      setOutput("Erreur technique. Vérifiez votre connexion.");
+      setOutput("Erreur de connexion au serveur.");
     }
     setLoading(false);
   };
