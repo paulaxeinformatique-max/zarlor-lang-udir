@@ -71,17 +71,17 @@ try {
       
       const data = await response.json();
 
-      // AJOUT DE CE TEST POUR VOIR L'ERREUR RÉELLE DE GOOGLE
+      // Si Google renvoie une erreur (clé invalide, etc.)
       if (data.error) {
-        setOutput(`Erreur Google : ${data.error.message}`);
-      } else if (data.candidates && data.candidates[0].content) {
+        setOutput(`Erreur Google : ${data.error.message} (Code: ${data.error.code})`);
+      } else if (data.candidates && data.candidates[0]) {
         setOutput(data.candidates[0].content.parts[0].text);
       } else {
-        setOutput("L'IA a renvoyé une réponse vide.");
+        setOutput("L'IA a renvoyé une réponse vide ou inattendue.");
       }
+
     } catch (error) {
-      console.error("Erreur:", error);
-      setOutput("Erreur de connexion au serveur.");
+      setOutput("Impossible de contacter Google. Vérifiez votre clé API dans le fichier .env.");
     }
     setLoading(false);
   };
