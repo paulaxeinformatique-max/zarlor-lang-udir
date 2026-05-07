@@ -47,38 +47,38 @@ function App() {
   };
 
   // Fonction principale d'appel à l'IA [cite: 24, 27]
-  const handleSublime = async () => {
+const handleSublime = async () => {
     if (!input) return;
     setLoading(true);
     setCorrectionExpert(''); 
 
-    // Préparation des exemples pour l'apprentissage de l'IA [cite: 24, 25]
     const exemplesTresor = tresor.length > 0 
-      ? "\nExemples validés par l'expert (UDIR 77) :\n" + 
-        tresor.map(t => `Demande: ${t.demande_initiale} -> Correction: ${t.version_expert}`).join("\n")
+      ? "\nCONNAISSANCES EXPERTES (Modèles UDIR 77) :\n" + 
+        tresor.map(t => `D: ${t.demande_initiale} -> R: ${t.version_expert}`).join("\n")
       : "";
 
-    const promptSysteme = `Tu es l'expert UDIR 77. Mode actuel : ${mode}. ${exemplesTresor}\nRespecte scrupuleusement la graphie 77.`;
+    const promptSysteme = `Tu es l'expert UDIR 77. Mode : ${mode}. ${exemplesTresor}\nProduis uniquement du créole 77.`;
 
-try {
-      // On utilise v1 au lieu de v1beta pour plus de stabilité
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${nomModele}:generateContent?key=${API_KEY}`, {
+    try {
+      // URL ultra-robuste
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${nomModele}:generateContent?key=${API_KEY}`;
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte à traiter : ${input}` }] }]
+          contents: [{ parts: [{ text: `${promptSysteme}\n\nTexte : ${input}` }] }]
         })
       });
       
       const data = await response.json();
 
       if (data.error) {
-        // Cela nous dira EXACTEMENT ce qui ne va pas
-        setOutput(`Erreur Google : ${data.error.message}`);
+        setOutput(`Erreur : ${data.error.message}`);
       } else if (data.candidates && data.candidates[0]) {
         setOutput(data.candidates[0].content.parts[0].text);
       } else {
-        setOutput("L'IA n'a pas pu générer de réponse. Réessayez.");
+        setOutput("Aucune réponse. Réessayez.");
       }
     } catch (error) {
       setOutput("Erreur de connexion. Vérifiez votre clé API.");
