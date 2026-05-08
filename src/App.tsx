@@ -74,7 +74,8 @@ function App() {
     Règles : Respecte les élisions, les traits d'union et le rythme réunionnais authentique.`;
 
     try {
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${nomModele}:generateContent?key=${API_KEY}`, {
+      // Remplacez la ligne 16 par celle-ci :
+const response = await fetch(`https://generativelanguage.googleapis.com/v1/${nomModele}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
