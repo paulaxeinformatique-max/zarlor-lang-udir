@@ -19,7 +19,7 @@ function App() {
   const [tresor, setTresor] = useState<TresorEntry[]>([]);
   const [mode, setMode] = useState('traduire'); 
   const [correctionExpert, setCorrectionExpert] = useState('');
-  const [nomModele] = useState('models/gemini-1.5-pro'); // Utilisation du mode Pro pour la précision
+  const [nomModele] = useState('models/gemini-1.5-flash');
 
   // --- CHARGEMENT DE LA MÉMOIRE ---
   useEffect(() => {
