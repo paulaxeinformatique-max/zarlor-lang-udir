@@ -19,7 +19,7 @@ function App() {
   const [tresor, setTresor] = useState<TresorEntry[]>([]);
   const [mode, setMode] = useState('traduire'); 
   const [correctionExpert, setCorrectionExpert] = useState('');
-  const [nomModele] = useState('models/gemini-1.5-flash');
+  const [nomModele] = useState('gemini-1.5-flash');
 
   // --- CHARGEMENT DE LA MÉMOIRE ---
   useEffect(() => {
@@ -74,7 +74,7 @@ function App() {
 
     try {
       // Note : on utilise v1beta ou v1 selon la dispo de votre compte
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1/${nomModele}:generateContent?key=${API_KEY}`, {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${nomModele}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
