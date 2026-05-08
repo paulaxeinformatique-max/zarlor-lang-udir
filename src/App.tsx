@@ -61,7 +61,6 @@ function App() {
     setOutput(''); 
     setCorrectionExpert(''); 
 
-    // Préparation du contexte basé sur le Trésor (Few-Shot Learning)
     const exemplesTresor = tresor.length > 0 
       ? "\nCONNAISSANCES ACQUISES (Modèles à suivre) :\n" + 
         tresor.map(t => `Demande: ${t.demande_initiale} [Mode: ${t.choix_mode}] -> RÉPONSE VALIDÉE: ${t.version_expert}`).join("\n")
@@ -74,8 +73,8 @@ function App() {
     Règles : Respecte les élisions, les traits d'union et le rythme réunionnais authentique.`;
 
     try {
-      // Remplacez la ligne 16 par celle-ci :
-const response = await fetch(`https://generativelanguage.googleapis.com/v1/${nomModele}:generateContent?key=${API_KEY}`, {
+      // Note : on utilise v1beta ou v1 selon la dispo de votre compte
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${nomModele}:generateContent?key=${API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -84,15 +83,27 @@ const response = await fetch(`https://generativelanguage.googleapis.com/v1/${nom
           }]
         })
       });
+
       const data = await response.json();
-      const texteIA = data.candidates[0].content.parts[0].text;
-      setOutput(texteIA);
-    } catch (error) {
-  console.error("Erreur Gemini détaillée:", error);
-  // Remplacez votre message par celui-ci temporairement :
-  setOutput(`Détail erreur : ${error.message}. Regardez la console (F12) pour le code status.`);
-}
-    setLoading(false);
+
+      // SI GOOGLE RENVOIE UNE ERREUR (Clé, Facturation, etc.)
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Erreur API Google");
+      }
+
+      if (data.candidates && data.candidates[0]?.content?.parts[0]?.text) {
+        setOutput(data.candidates[0].content.parts[0].text);
+      } else {
+        throw new Error("L'IA a renvoyé une réponse vide.");
+      }
+
+    } catch (err: any) {
+      console.error("Erreur détaillée:", err);
+      // ICI : on affiche le VRAI message d'erreur dans l'interface
+      setOutput(`Détail : ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // --- INTERFACE (RENDU) ---
