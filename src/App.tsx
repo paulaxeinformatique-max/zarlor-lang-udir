@@ -88,9 +88,10 @@ const response = await fetch(`https://generativelanguage.googleapis.com/v1/${nom
       const texteIA = data.candidates[0].content.parts[0].text;
       setOutput(texteIA);
     } catch (error) {
-      console.error("Erreur Gemini:", error);
-      setOutput("Erreur : Impossible de joindre l'IA. Vérifiez votre clé API et votre connexion.");
-    }
+  console.error("Erreur Gemini détaillée:", error);
+  // Remplacez votre message par celui-ci temporairement :
+  setOutput(`Détail erreur : ${error.message}. Regardez la console (F12) pour le code status.`);
+}
     setLoading(false);
   };
 
