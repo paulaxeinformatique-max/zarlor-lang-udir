@@ -99,7 +99,7 @@ function App() {
       
       <header style={{ textAlign: 'center', marginBottom: '30px' }}>
         <h1 style={{ color: '#d35400', fontSize: '2.5rem', marginBottom: '5px' }}>Zarlor la Lang 💎</h1>
-        <p style={{ italic: true, color: '#7f8c8d' }}>Outil d'apprentissage souverain - Graphie UDIR 77</p>
+        <p style={{ fontStyle: 'italic', color: '#7f8c8d' }}>Outil d'apprentissage souverain - Graphie UDIR 77</p>
       </header>
 
       {/* SECTION SAISIE */}
